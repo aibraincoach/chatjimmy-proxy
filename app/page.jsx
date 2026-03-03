@@ -69,6 +69,19 @@ export default function HomePage() {
     let chunkCount = 0;
     let totalChars = 0;
 
+    const appendAssistantContent = (contentChunk) => {
+      if (!contentChunk) return;
+
+      setMessages((current) => {
+        const updated = [...current];
+        updated[updated.length - 1] = {
+          ...updated[updated.length - 1],
+          content: `${updated[updated.length - 1].content}${contentChunk}`,
+        };
+        return updated;
+      });
+    };
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -83,6 +96,39 @@ export default function HomePage() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let inStatsBlock = false;
+
+      const stripStatsBlocks = (text) => {
+        if (!text) return '';
+
+        let visibleText = '';
+        let cursor = 0;
+
+        while (cursor < text.length) {
+          if (inStatsBlock) {
+            const statsEnd = text.indexOf('<|/stats|>', cursor);
+            if (statsEnd === -1) {
+              return visibleText;
+            }
+
+            cursor = statsEnd + '<|/stats|>'.length;
+            inStatsBlock = false;
+            continue;
+          }
+
+          const statsStart = text.indexOf('<|stats|>', cursor);
+          if (statsStart === -1) {
+            visibleText += text.slice(cursor);
+            break;
+          }
+
+          visibleText += text.slice(cursor, statsStart);
+          cursor = statsStart + '<|stats|>'.length;
+          inStatsBlock = true;
+        }
+
+        return visibleText;
+      };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -104,23 +150,31 @@ export default function HomePage() {
             const payload = line.slice(2);
             try {
               const token = JSON.parse(payload);
-              setMessages((current) => {
-                const updated = [...current];
-                updated[updated.length - 1] = {
-                  ...updated[updated.length - 1],
-                  content: `${updated[updated.length - 1].content}${token}`,
-                };
-                return updated;
-              });
+              appendAssistantContent(token);
             } catch {
               // We keep this parser permissive so malformed inspector lines don't break the entire chat demo.
             }
+            continue;
           }
+
+          appendAssistantContent(stripStatsBlocks(`${line}\n`));
         }
       }
 
       if (buffer.trim()) {
         pushLog('stream', buffer);
+
+        if (buffer.startsWith('0:')) {
+          const payload = buffer.slice(2);
+          try {
+            const token = JSON.parse(payload);
+            appendAssistantContent(token);
+          } catch {
+            // We keep this parser permissive so malformed inspector lines don't break the entire chat demo.
+          }
+        } else {
+          appendAssistantContent(stripStatsBlocks(buffer));
+        }
       }
 
       const elapsedMs = Math.round(performance.now() - startedAt);
