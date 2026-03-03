@@ -5,9 +5,9 @@
 export const STATS_BLOCK_PATTERN = /<\|stats\|>([\s\S]*?)<\|\/stats\|>/;
 
 /**
- * Safely parse JSON string, returning null on failure
- * @param {any} value - The value to parse
- * @returns {object|null} Parsed JSON object or null
+ * Safely parse a JSON string, returning null on failure
+ * @param {string|null|undefined} value - The value to parse
+ * @returns {any|null} Parsed JSON object or null
  */
 export function safeParseJson(value) {
   if (!value) {
@@ -28,7 +28,7 @@ export function safeParseJson(value) {
  * @returns {number|null} The first numeric value found or null
  */
 export function pickNumber(source, keys) {
-  if (!source || typeof source !== 'object') {
+  if (!source || typeof source !== 'object' || Array.isArray(source)) {
     return null;
   }
 
