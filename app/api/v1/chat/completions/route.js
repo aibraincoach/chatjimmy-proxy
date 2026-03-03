@@ -11,12 +11,11 @@
 
 import { corsHeaders } from '../../../../lib/cors';
 import { STATS_BLOCK_PATTERN, safeParseJson, pickNumber } from '../../../../lib/parse';
+import { validateCompletionMessages, validateCompletionContentLength } from '../../../../lib/validation';
 import { generateId, makeMessage } from '../../../../lib/format';
 
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
 const UPSTREAM_TIMEOUT_MS = 30_000;
-const MAX_MESSAGES = 50;
-const MAX_CONTENT_LENGTH = 100_000;
 
 function completionsCors() {
   const headers = corsHeaders('POST, OPTIONS');
@@ -34,27 +33,18 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    if (!Array.isArray(body.messages) || body.messages.length === 0) {
+    const messagesError = validateCompletionMessages(body.messages);
+    if (messagesError) {
       return Response.json(
-        { error: { message: 'messages is required and must be a non-empty array', type: 'invalid_request_error', param: 'messages', code: null } },
+        { error: { message: messagesError, type: 'invalid_request_error', param: 'messages', code: null } },
         { status: 400, headers: completionsCors() },
       );
     }
 
-    if (body.messages.length > MAX_MESSAGES) {
+    const contentLengthError = validateCompletionContentLength(body.messages);
+    if (contentLengthError) {
       return Response.json(
-        { error: { message: `messages array exceeds maximum of ${MAX_MESSAGES} entries`, type: 'invalid_request_error', param: 'messages', code: null } },
-        { status: 400, headers: completionsCors() },
-      );
-    }
-
-    let totalContentLength = 0;
-    for (const msg of body.messages) {
-      totalContentLength += typeof msg.content === 'string' ? msg.content.length : 0;
-    }
-    if (totalContentLength > MAX_CONTENT_LENGTH) {
-      return Response.json(
-        { error: { message: `Total content length exceeds maximum of ${MAX_CONTENT_LENGTH} characters`, type: 'invalid_request_error', param: 'messages', code: null } },
+        { error: { message: contentLengthError, type: 'invalid_request_error', param: 'messages', code: null } },
         { status: 400, headers: completionsCors() },
       );
     }

@@ -49,7 +49,7 @@ describe('parse utilities', () => {
       expect(result).toBeNull();
     });
 
-    it('returns null for empty object string', () => {
+    it('parses empty object string', () => {
       const result = safeParseJson('{}');
       expect(result).toEqual({});
     });

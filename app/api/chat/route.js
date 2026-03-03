@@ -1,5 +1,6 @@
 import { corsHeaders, handleOptions } from '../../lib/cors';
 import { STATS_BLOCK_PATTERN, safeParseJson, pickNumber, getCreatedTimestamp, getFinishReason } from '../../lib/parse';
+import { validateChatMessage, validateChatHistory } from '../../lib/validation';
 import { makeMessage } from '../../lib/format';
 
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
@@ -8,8 +9,6 @@ const PROXY_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '0.4.0';
 const PROXY_COMMIT_SHA = process.env.VERCEL_GIT_COMMIT_SHA || '';
 const PROXY_BUILD_TIMESTAMP = process.env.NEXT_PUBLIC_BUILD_TIMESTAMP || new Date().toISOString();
 
-const MAX_MESSAGE_LENGTH = 10_000;
-const MAX_HISTORY_LENGTH = 50;
 const UPSTREAM_TIMEOUT_MS = 30_000;
 
 function chatCors() {
@@ -30,23 +29,18 @@ export async function POST(request) {
     const history = Array.isArray(body.history) ? body.history : [];
     const message = typeof body.message === 'string' ? body.message : '';
 
-    if (!message.trim()) {
+    const messageError = validateChatMessage(message);
+    if (messageError) {
       return Response.json(
-        { error: 'message is required' },
+        { error: messageError },
         { status: 400, headers: chatCors() },
       );
     }
 
-    if (message.length > MAX_MESSAGE_LENGTH) {
+    const historyError = validateChatHistory(history);
+    if (historyError) {
       return Response.json(
-        { error: `message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` },
-        { status: 400, headers: chatCors() },
-      );
-    }
-
-    if (history.length > MAX_HISTORY_LENGTH) {
-      return Response.json(
-        { error: `history exceeds maximum of ${MAX_HISTORY_LENGTH} entries` },
+        { error: historyError },
         { status: 400, headers: chatCors() },
       );
     }
