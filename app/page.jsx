@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 function nowLabel() {
   return new Date().toLocaleTimeString();
@@ -183,8 +183,16 @@ export default function HomePage() {
   const [isSending, setIsSending] = useState(false);
   const [connection, setConnection] = useState({ status: 'checking', latencyMs: null });
   const [logs, setLogs] = useState([]);
+  const abortRef = useRef(null);
 
   const canSend = useMemo(() => input.trim().length > 0 && !isSending, [input, isSending]);
+
+  function handleCancel() {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+  }
 
   const pushLog = (type, text) => {
     setLogs((current) => [...current, `[${nowLabel()}] ${type}: ${text}`]);
@@ -275,11 +283,15 @@ export default function HomePage() {
       });
     };
 
+    const fetchController = new AbortController();
+    abortRef.current = fetchController;
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestPayload),
+        signal: fetchController.signal,
       });
 
       if (!response.body) {
@@ -373,8 +385,14 @@ export default function HomePage() {
       const elapsedMs = Math.round(performance.now() - startedAt);
       pushLog('stats', `chunks=${chunkCount}, chars=${totalChars}, elapsedMs=${elapsedMs}`);
     } catch (error) {
-      pushLog('error', error instanceof Error ? error.message : 'unknown');
+      if (error.name === 'AbortError') {
+        appendAssistantContent('[Response cancelled]');
+        pushLog('cancelled', 'Request aborted by user');
+      } else {
+        pushLog('error', error instanceof Error ? error.message : 'unknown');
+      }
     } finally {
+      abortRef.current = null;
       setIsSending(false);
     }
   }
@@ -442,9 +460,15 @@ export default function HomePage() {
             />
             <div style={styles.hint}>Type /help for API docs or /version for build info</div>
           </div>
-          <button style={styles.button} type="submit" disabled={!canSend}>
-            {isSending ? 'Streaming...' : 'Send'}
-          </button>
+          {isSending ? (
+            <button style={styles.cancelButton} type="button" onClick={handleCancel}>
+              Cancel
+            </button>
+          ) : (
+            <button style={styles.button} type="submit" disabled={!canSend}>
+              Send
+            </button>
+          )}
         </form>
       </section>
 
@@ -460,12 +484,14 @@ export default function HomePage() {
 
 const styles = {
   main: {
-    minHeight: '100vh',
+    height: '100vh',
+    overflow: 'hidden',
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
     gap: '12px',
     padding: '12px',
     background: '#0a0f1a',
+    boxSizing: 'border-box',
   },
   panel: {
     border: '1px solid #27324a',
@@ -473,7 +499,8 @@ const styles = {
     background: '#101827',
     display: 'flex',
     flexDirection: 'column',
-    minHeight: 'calc(100vh - 24px)',
+    overflow: 'hidden',
+    minHeight: 0,
   },
   header: {
     padding: '12px',
@@ -539,6 +566,15 @@ const styles = {
   },
   button: {
     background: '#2e5bff',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '0 14px',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+  },
+  cancelButton: {
+    background: '#ff6b6b',
     color: '#fff',
     border: 'none',
     borderRadius: '8px',
