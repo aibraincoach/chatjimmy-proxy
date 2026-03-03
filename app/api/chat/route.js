@@ -1,3 +1,5 @@
+import { corsHeaders, handleOptions } from '../../lib/cors';
+
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
 const STATS_BLOCK_PATTERN = /<\|stats\|>([\s\S]*?)<\|\/stats\|>/;
 
@@ -5,12 +7,12 @@ const PROXY_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '0.4.0';
 const PROXY_COMMIT_SHA = process.env.VERCEL_GIT_COMMIT_SHA || '';
 const PROXY_BUILD_TIMESTAMP = process.env.NEXT_PUBLIC_BUILD_TIMESTAMP || new Date().toISOString();
 
-function corsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  };
+const MAX_MESSAGE_LENGTH = 10_000;
+const MAX_HISTORY_LENGTH = 50;
+const UPSTREAM_TIMEOUT_MS = 30_000;
+
+function chatCors() {
+  return corsHeaders('POST, OPTIONS');
 }
 
 function makeMessage(role, content, indexOffset = 0) {
@@ -25,7 +27,7 @@ function makeMessage(role, content, indexOffset = 0) {
 }
 
 export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders() });
+  return handleOptions('POST, OPTIONS');
 }
 
 export async function POST(request) {
@@ -41,7 +43,21 @@ export async function POST(request) {
     if (!message.trim()) {
       return Response.json(
         { error: 'message is required' },
-        { status: 400, headers: corsHeaders() },
+        { status: 400, headers: chatCors() },
+      );
+    }
+
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return Response.json(
+        { error: `message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` },
+        { status: 400, headers: chatCors() },
+      );
+    }
+
+    if (history.length > MAX_HISTORY_LENGTH) {
+      return Response.json(
+        { error: `history exceeds maximum of ${MAX_HISTORY_LENGTH} entries` },
+        { status: 400, headers: chatCors() },
       );
     }
 
@@ -59,14 +75,35 @@ export async function POST(request) {
       attachment: null,
     };
 
-    const upstream = await fetch(CHAT_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'chatjimmy-proxy/0.1.0 (educational project)',
-      },
-      body: JSON.stringify(upstreamPayload),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+
+    let upstream;
+    try {
+      upstream = await fetch(CHAT_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'chatjimmy-proxy/0.1.0 (educational project)',
+        },
+        body: JSON.stringify(upstreamPayload),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') {
+        return Response.json(
+          { error: 'Upstream timeout', status: 504 },
+          { status: 504, headers: chatCors() },
+        );
+      }
+      console.error('Upstream fetch failed:', err);
+      return Response.json(
+        { error: 'Upstream connection failed' },
+        { status: 502, headers: chatCors() },
+      );
+    }
+    clearTimeout(timeout);
 
     if (isJsonFormat) {
       const upstreamText = await upstream.text();
@@ -76,9 +113,8 @@ export async function POST(request) {
           {
             error: 'Upstream chat request failed',
             status: upstream.status,
-            details: upstreamText || null,
           },
-          { status: upstream.status, headers: corsHeaders() },
+          { status: upstream.status, headers: chatCors() },
         );
       }
 
@@ -101,7 +137,7 @@ export async function POST(request) {
       const created = getCreatedTimestamp(stats);
       const finishReason = getFinishReason(stats);
 
-      const jsonHeaders = new Headers(corsHeaders());
+      const jsonHeaders = new Headers(chatCors());
       jsonHeaders.set('Content-Type', 'application/json; charset=utf-8');
       jsonHeaders.set('Cache-Control', 'no-store');
 
@@ -142,14 +178,23 @@ export async function POST(request) {
       );
     }
 
-    if (!upstream.body) {
+    if (!upstream.ok) {
+      const errorText = await upstream.text();
+      console.error('Upstream non-2xx in streaming path:', upstream.status, errorText);
       return Response.json(
-        { error: 'Upstream did not return a stream body' },
-        { status: 502, headers: corsHeaders() },
+        { error: 'Upstream chat request failed', status: upstream.status },
+        { status: upstream.status, headers: chatCors() },
       );
     }
 
-    const headers = new Headers(corsHeaders());
+    if (!upstream.body) {
+      return Response.json(
+        { error: 'Upstream did not return a stream body' },
+        { status: 502, headers: chatCors() },
+      );
+    }
+
+    const headers = new Headers(chatCors());
     headers.set('Content-Type', upstream.headers.get('Content-Type') || 'text/plain; charset=utf-8');
     headers.set('Cache-Control', 'no-store');
 
@@ -159,9 +204,10 @@ export async function POST(request) {
       headers,
     });
   } catch (error) {
+    console.error('Proxy chat error:', error);
     return Response.json(
-      { error: 'Proxy chat request failed', details: error instanceof Error ? error.message : 'unknown' },
-      { status: 500, headers: corsHeaders() },
+      { error: 'Internal proxy error' },
+      { status: 500, headers: chatCors() },
     );
   }
 }

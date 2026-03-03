@@ -1,31 +1,57 @@
-const MODELS_ENDPOINT = 'https://chatjimmy.ai/api/models';
+import { corsHeaders, handleOptions } from '../../lib/cors';
 
-function corsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  };
-}
+const MODELS_ENDPOINT = 'https://chatjimmy.ai/api/models';
+const UPSTREAM_TIMEOUT_MS = 30_000;
 
 export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders() });
+  return handleOptions('GET, OPTIONS');
 }
 
 export async function GET() {
   try {
-    const upstream = await fetch(MODELS_ENDPOINT, {
-      headers: {
-        'User-Agent': 'chatjimmy-proxy/0.1.0 (educational project)',
-      },
-      cache: 'no-store',
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+
+    let upstream;
+    try {
+      upstream = await fetch(MODELS_ENDPOINT, {
+        headers: {
+          'User-Agent': 'chatjimmy-proxy/0.1.0 (educational project)',
+        },
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') {
+        return Response.json(
+          { error: 'Upstream timeout', status: 504 },
+          { status: 504, headers: corsHeaders() },
+        );
+      }
+      console.error('Models upstream fetch failed:', err);
+      return Response.json(
+        { error: 'Upstream connection failed' },
+        { status: 502, headers: corsHeaders() },
+      );
+    }
+    clearTimeout(timeout);
+
+    if (!upstream.ok) {
+      const errorText = await upstream.text();
+      console.error('Models upstream non-2xx:', upstream.status, errorText);
+      return Response.json(
+        { error: 'Upstream returned an error', status: upstream.status },
+        { status: upstream.status, headers: corsHeaders() },
+      );
+    }
 
     const data = await upstream.json();
     return Response.json(data, { status: upstream.status, headers: corsHeaders() });
   } catch (error) {
+    console.error('Models proxy error:', error);
     return Response.json(
-      { error: 'Failed to load models', details: error instanceof Error ? error.message : 'unknown' },
+      { error: 'Internal proxy error' },
       { status: 502, headers: corsHeaders() },
     );
   }
