@@ -1,6 +1,10 @@
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
 const STATS_BLOCK_PATTERN = /<\|stats\|>([\s\S]*?)<\|\/stats\|>/;
 
+const PROXY_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '0.4.0';
+const PROXY_COMMIT_SHA = process.env.VERCEL_GIT_COMMIT_SHA || '';
+const PROXY_BUILD_TIMESTAMP = process.env.NEXT_PUBLIC_BUILD_TIMESTAMP || new Date().toISOString();
+
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
@@ -125,6 +129,11 @@ export async function POST(request) {
                 total_duration: totalDuration,
               }
             : null,
+          proxy: {
+            version: PROXY_VERSION,
+            commit: PROXY_COMMIT_SHA,
+            buildTimestamp: PROXY_BUILD_TIMESTAMP,
+          },
         }),
         {
           status: upstream.status,

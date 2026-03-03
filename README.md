@@ -2,6 +2,18 @@
 
 Educational Next.js 14 proxy that forwards chat calls to `https://chatjimmy.ai` and supports both raw streaming passthrough and normalized JSON responses while exposing a live in-browser network inspector.
 
+## Why This Exists
+
+WHY THIS EXISTS
+
+ChatJimmy.ai is a demo chatbot built by Taalas (taalas.com) to showcase their HC1 chip — custom silicon that hardwires Meta's Llama 3.1 8B directly into the hardware. The result: ~17,000 tokens per second per user, roughly 10x faster than the next fastest inference provider, at a fraction of the cost and power.
+
+But a chatbot is just a toy. The real power of sub-millisecond inference is in programmatic access — applications where microseconds matter: real-time agents, high-frequency decision loops, latency-sensitive pipelines, and any workflow where waiting 500ms for a response is a dealbreaker.
+
+This proxy exists to unlock that power. It wraps ChatJimmy's frontend-only interface in a clean, OpenAI-compatible API so developers can build real applications on top of the fastest inference hardware in the world.
+
+Architecture: Your app → This proxy → Taalas HC1 silicon → response in under 5ms.
+
 ## Architecture
 
 ```text
