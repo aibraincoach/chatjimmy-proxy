@@ -6,6 +6,148 @@ function nowLabel() {
   return new Date().toLocaleTimeString();
 }
 
+function getHelpDocSections(baseUrl) {
+  return {
+    chat: [
+      {
+        title: 'POST /api/chat',
+        description:
+          'Proxy chat endpoint with streaming output by default and optional JSON mode via ?format=json.',
+      },
+      {
+        title: 'Streaming mode (default)',
+        code: `curl -N -X POST "${baseUrl}/api/chat" \\\n  -H "Content-Type: application/json" \\\n  -d '{
+    "message": "Explain what this API does",
+    "history": [
+      { "role": "user", "content": "Hi" },
+      { "role": "assistant", "content": "Hello!" }
+    ]
+  }'`,
+      },
+      {
+        title: 'JSON mode (?format=json)',
+        code: `curl -X POST "${baseUrl}/api/chat?format=json" \\\n  -H "Content-Type: application/json" \\\n  -d '{
+    "message": "Explain what this API does",
+    "history": [],
+    "chatOptions": {
+      "selectedModel": "llama3.1-8B",
+      "systemPrompt": "",
+      "topK": 8
+    }
+  }'`,
+      },
+      {
+        title: 'Request body schema',
+        code: `{
+  "message": "string (required)",
+  "history": [
+    {
+      "role": "string (default: \"user\")",
+      "content": "string (default: \"\")"
+    }
+  ],
+  "chatOptions": {
+    "selectedModel": "string (default forwarded upstream: \"llama3.1-8B\")",
+    "systemPrompt": "string (default: \"\")",
+    "topK": "number (default: 8)"
+  }
+}`,
+      },
+      {
+        title: 'JSON response schema (?format=json)',
+        code: `{
+  "id": "string",
+  "object": "chat.completion",
+  "created": "number (unix seconds)",
+  "model": "string",
+  "choices": [
+    {
+      "index": 0,
+      "message": { "role": "assistant", "content": "string" },
+      "finish_reason": "string"
+    }
+  ],
+  "usage": {
+    "prefill_tokens": "number | null",
+    "decode_tokens": "number | null",
+    "total_tokens": "number | null",
+    "total_duration": "number | null"
+  }
+}`,
+      },
+    ],
+    health: [
+      {
+        title: 'GET /api/health',
+        description: 'Checks proxy + upstream health and includes latency in milliseconds.',
+      },
+      {
+        title: 'Example request',
+        code: `curl "${baseUrl}/api/health"`,
+      },
+      {
+        title: 'Example response',
+        code: `{
+  "proxy": "ok",
+  "latencyMs": 123,
+  "upstreamStatus": 200,
+  "upstream": {
+    "status": "ok"
+  }
+}`,
+      },
+    ],
+    models: [
+      {
+        title: 'GET /api/models',
+        description: 'Returns model metadata proxied directly from the upstream API.',
+      },
+      {
+        title: 'Example request',
+        code: `curl "${baseUrl}/api/models"`,
+      },
+      {
+        title: 'Example response',
+        code: `[
+  {
+    "id": "llama3.1-8B",
+    "name": "Llama 3.1 8B",
+    "provider": "Taalas Inc."
+  }
+]`,
+      },
+    ],
+  };
+}
+
+function getHelpPayload(commandText) {
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const normalized = commandText.trim().toLowerCase();
+  const sections = getHelpDocSections(baseUrl);
+
+  if (normalized === '/help chat') {
+    return { title: 'API Help: /api/chat', sections: sections.chat };
+  }
+
+  if (normalized === '/help health') {
+    return { title: 'API Help: /api/health', sections: sections.health };
+  }
+
+  if (normalized === '/help models') {
+    return { title: 'API Help: /api/models', sections: sections.models };
+  }
+
+  return {
+    title: 'API Help: chatjimmy-proxy',
+    intro: [
+      `Base URL: ${baseUrl}`,
+      'Authentication: none required.',
+      'Upstream: chatjimmy.ai running Llama 3.1 8B by Taalas Inc.',
+    ],
+    sections: [...sections.chat, ...sections.health, ...sections.models],
+  };
+}
+
 export default function HomePage() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
@@ -48,6 +190,17 @@ export default function HomePage() {
 
     const outgoingMessage = input.trim();
     setInput('');
+
+    if (/^\/help(\s+(chat|health|models))?$/i.test(outgoingMessage)) {
+      const helpPayload = getHelpPayload(outgoingMessage);
+      setMessages((current) => [
+        ...current,
+        { role: 'user', content: outgoingMessage },
+        { role: 'assistant', content: '', type: 'help', helpPayload },
+      ]);
+      pushLog('command', `${outgoingMessage} (intercepted — not sent to API)`);
+      return;
+    }
 
     const nextMessages = [
       ...messages,
@@ -210,19 +363,38 @@ export default function HomePage() {
               }}
             >
               <div style={styles.role}>{msg.role}</div>
-              <div>{msg.content || (msg.role === 'assistant' && isSending ? '…' : '')}</div>
+              {msg.type === 'help' ? (
+                <div style={styles.helpDoc}>
+                  <div style={styles.helpTitle}>{msg.helpPayload.title}</div>
+                  {msg.helpPayload.intro?.map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                  {msg.helpPayload.sections.map((section) => (
+                    <div key={section.title} style={styles.helpSection}>
+                      <div style={styles.helpSectionTitle}>{section.title}</div>
+                      {section.description ? <div>{section.description}</div> : null}
+                      {section.code ? <pre style={styles.codeBlock}>{section.code}</pre> : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div>{msg.content || (msg.role === 'assistant' && isSending ? '…' : '')}</div>
+              )}
             </div>
           ))}
         </div>
 
         <form style={styles.form} onSubmit={handleSend}>
-          <input
-            style={styles.input}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask something..."
-            disabled={isSending}
-          />
+          <div style={styles.inputColumn}>
+            <input
+              style={styles.input}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask something..."
+              disabled={isSending}
+            />
+            <div style={styles.hint}>Type /help for API docs</div>
+          </div>
           <button style={styles.button} type="submit" disabled={!canSend}>
             {isSending ? 'Streaming...' : 'Send'}
           </button>
@@ -300,14 +472,23 @@ const styles = {
     padding: '12px',
     borderTop: '1px solid #27324a',
   },
-  input: {
+  inputColumn: {
     flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  input: {
     background: '#0d1422',
     color: '#e6e9ef',
     border: '1px solid #33415f',
     borderRadius: '8px',
     padding: '10px',
     fontFamily: 'inherit',
+  },
+  hint: {
+    fontSize: '11px',
+    color: '#8f9bb3',
   },
   button: {
     background: '#2e5bff',
@@ -326,5 +507,34 @@ const styles = {
     fontSize: '12px',
     lineHeight: 1.45,
     color: '#b5c7ff',
+  },
+  helpDoc: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  helpTitle: {
+    fontWeight: 600,
+  },
+  helpSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  helpSectionTitle: {
+    fontSize: '12px',
+    fontWeight: 600,
+    color: '#d6def0',
+  },
+  codeBlock: {
+    margin: 0,
+    padding: '8px',
+    borderRadius: '8px',
+    border: '1px solid #3a4a68',
+    background: '#0a1120',
+    fontSize: '12px',
+    lineHeight: 1.5,
+    overflowX: 'auto',
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
   },
 };
