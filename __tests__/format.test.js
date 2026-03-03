@@ -100,7 +100,7 @@ describe('format utilities', () => {
       const userMsg = makeMessage('user', 'Hi');
       const assistantMsg = makeMessage('assistant', 'Hello');
       const systemMsg = makeMessage('system', 'You are helpful');
-      
+
       expect(userMsg.role).toBe('user');
       expect(assistantMsg.role).toBe('assistant');
       expect(systemMsg.role).toBe('system');

@@ -11,7 +11,10 @@
 
 import { corsHeaders } from '../../../../lib/cors';
 import { STATS_BLOCK_PATTERN, safeParseJson, pickNumber } from '../../../../lib/parse';
-import { validateCompletionMessages, validateCompletionContentLength } from '../../../../lib/validation';
+import {
+  validateCompletionMessages,
+  validateCompletionContentLength,
+} from '../../../../lib/validation';
 import { generateId, makeMessage } from '../../../../lib/format';
 
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
@@ -24,7 +27,6 @@ function completionsCors() {
   return headers;
 }
 
-
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: completionsCors() });
 }
@@ -36,7 +38,14 @@ export async function POST(request) {
     const messagesError = validateCompletionMessages(body.messages);
     if (messagesError) {
       return Response.json(
-        { error: { message: messagesError, type: 'invalid_request_error', param: 'messages', code: null } },
+        {
+          error: {
+            message: messagesError,
+            type: 'invalid_request_error',
+            param: 'messages',
+            code: null,
+          },
+        },
         { status: 400, headers: completionsCors() },
       );
     }
@@ -44,18 +53,22 @@ export async function POST(request) {
     const contentLengthError = validateCompletionContentLength(body.messages);
     if (contentLengthError) {
       return Response.json(
-        { error: { message: contentLengthError, type: 'invalid_request_error', param: 'messages', code: null } },
+        {
+          error: {
+            message: contentLengthError,
+            type: 'invalid_request_error',
+            param: 'messages',
+            code: null,
+          },
+        },
         { status: 400, headers: completionsCors() },
       );
     }
 
     const model = body.model || 'llama3.1-8B';
     const stream = body.stream === true;
-    const topK = typeof body.top_k === 'number'
-      ? body.top_k
-      : typeof body.topK === 'number'
-        ? body.topK
-        : 8;
+    const topK =
+      typeof body.top_k === 'number' ? body.top_k : typeof body.topK === 'number' ? body.topK : 8;
 
     const systemMessages = body.messages.filter((m) => m.role === 'system');
     const conversationMessages = body.messages.filter((m) => m.role !== 'system');
@@ -98,7 +111,14 @@ export async function POST(request) {
         );
       }
       return Response.json(
-        { error: { message: 'Upstream connection failed', type: 'server_error', param: null, code: null } },
+        {
+          error: {
+            message: 'Upstream connection failed',
+            type: 'server_error',
+            param: null,
+            code: null,
+          },
+        },
         { status: 502, headers: completionsCors() },
       );
     }
@@ -106,7 +126,14 @@ export async function POST(request) {
 
     if (!upstream.ok) {
       return Response.json(
-        { error: { message: 'Upstream request failed', type: 'server_error', param: null, code: null } },
+        {
+          error: {
+            message: 'Upstream request failed',
+            type: 'server_error',
+            param: null,
+            code: null,
+          },
+        },
         { status: 502, headers: completionsCors() },
       );
     }
@@ -128,7 +155,7 @@ export async function POST(request) {
     const totalTokens =
       promptTokens >= 0 && completionTokens >= 0
         ? promptTokens + completionTokens
-        : pickNumber(stats, ['total_tokens']) ?? -1;
+        : (pickNumber(stats, ['total_tokens']) ?? -1);
 
     if (stream) {
       const contentChunk = JSON.stringify({
@@ -136,11 +163,13 @@ export async function POST(request) {
         object: 'chat.completion.chunk',
         created,
         model,
-        choices: [{
-          index: 0,
-          delta: { content: assistantContent },
-          finish_reason: null,
-        }],
+        choices: [
+          {
+            index: 0,
+            delta: { content: assistantContent },
+            finish_reason: null,
+          },
+        ],
       });
 
       const finishChunk = JSON.stringify({
@@ -148,11 +177,13 @@ export async function POST(request) {
         object: 'chat.completion.chunk',
         created,
         model,
-        choices: [{
-          index: 0,
-          delta: {},
-          finish_reason: 'stop',
-        }],
+        choices: [
+          {
+            index: 0,
+            delta: {},
+            finish_reason: 'stop',
+          },
+        ],
       });
 
       const sseBody = `data: ${contentChunk}\n\ndata: ${finishChunk}\n\ndata: [DONE]\n\n`;
@@ -174,11 +205,13 @@ export async function POST(request) {
         object: 'chat.completion',
         created,
         model,
-        choices: [{
-          index: 0,
-          message: { role: 'assistant', content: assistantContent },
-          finish_reason: 'stop',
-        }],
+        choices: [
+          {
+            index: 0,
+            message: { role: 'assistant', content: assistantContent },
+            finish_reason: 'stop',
+          },
+        ],
         usage: {
           prompt_tokens: promptTokens,
           completion_tokens: completionTokens,

@@ -1,5 +1,11 @@
 import { corsHeaders, handleOptions } from '../../lib/cors';
-import { STATS_BLOCK_PATTERN, safeParseJson, pickNumber, getCreatedTimestamp, getFinishReason } from '../../lib/parse';
+import {
+  STATS_BLOCK_PATTERN,
+  safeParseJson,
+  pickNumber,
+  getCreatedTimestamp,
+  getFinishReason,
+} from '../../lib/parse';
 import { validateChatMessage, validateChatHistory } from '../../lib/validation';
 import { makeMessage } from '../../lib/format';
 
@@ -31,18 +37,12 @@ export async function POST(request) {
 
     const messageError = validateChatMessage(message);
     if (messageError) {
-      return Response.json(
-        { error: messageError },
-        { status: 400, headers: chatCors() },
-      );
+      return Response.json({ error: messageError }, { status: 400, headers: chatCors() });
     }
 
     const historyError = validateChatHistory(history);
     if (historyError) {
-      return Response.json(
-        { error: historyError },
-        { status: 400, headers: chatCors() },
-      );
+      return Response.json({ error: historyError }, { status: 400, headers: chatCors() });
     }
 
     const transformedHistory = history.map((entry, idx) =>
@@ -50,7 +50,10 @@ export async function POST(request) {
     );
 
     const upstreamPayload = {
-      messages: [...transformedHistory, makeMessage('user', message, transformedHistory.length + 1)],
+      messages: [
+        ...transformedHistory,
+        makeMessage('user', message, transformedHistory.length + 1),
+      ],
       chatOptions: {
         selectedModel: 'llama3.1-8B',
         systemPrompt: '',
@@ -179,7 +182,10 @@ export async function POST(request) {
     }
 
     const headers = new Headers(chatCors());
-    headers.set('Content-Type', upstream.headers.get('Content-Type') || 'text/plain; charset=utf-8');
+    headers.set(
+      'Content-Type',
+      upstream.headers.get('Content-Type') || 'text/plain; charset=utf-8',
+    );
     headers.set('Cache-Control', 'no-store');
 
     // We pass through the raw Vercel AI SDK stream so developers can inspect exact chunk framing.
@@ -189,10 +195,6 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('Proxy chat error:', error);
-    return Response.json(
-      { error: 'Internal proxy error' },
-      { status: 500, headers: chatCors() },
-    );
+    return Response.json({ error: 'Internal proxy error' }, { status: 500, headers: chatCors() });
   }
 }
-

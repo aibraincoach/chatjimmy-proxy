@@ -48,7 +48,8 @@ export function pickNumber(source, keys) {
  * @returns {number} Unix timestamp in seconds, or current time if not found
  */
 export function getCreatedTimestamp(stats) {
-  const createdAt = stats && typeof stats.created_at === 'string' ? Date.parse(stats.created_at) : NaN;
+  const createdAt =
+    stats && typeof stats.created_at === 'string' ? Date.parse(stats.created_at) : NaN;
   if (!Number.isNaN(createdAt)) {
     return Math.floor(createdAt / 1000);
   }

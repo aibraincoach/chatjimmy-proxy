@@ -113,11 +113,7 @@ describe('input validation logic', () => {
 
     describe('content length validation', () => {
       it('calculates total content length correctly', () => {
-        const messages = [
-          { content: 'hello' },
-          { content: 'world' },
-          { content: '!' },
-        ];
+        const messages = [{ content: 'hello' }, { content: 'world' }, { content: '!' }];
         expect(validateCompletionContentLength(messages)).toBeNull();
       });
 
@@ -153,10 +149,7 @@ describe('input validation logic', () => {
       });
 
       it('rejects when sum across messages exceeds max', () => {
-        const messages = [
-          { content: 'a'.repeat(60000) },
-          { content: 'b'.repeat(50000) },
-        ];
+        const messages = [{ content: 'a'.repeat(60000) }, { content: 'b'.repeat(50000) }];
         expect(validateCompletionContentLength(messages)).toBe(
           `Total content length exceeds maximum of ${MAX_CONTENT_LENGTH} characters`,
         );
@@ -186,10 +179,7 @@ describe('input validation logic', () => {
       });
 
       it('joins system messages with newline', () => {
-        const systemMessages = [
-          { content: 'You are helpful' },
-          { content: 'Be concise' },
-        ];
+        const systemMessages = [{ content: 'You are helpful' }, { content: 'Be concise' }];
         const systemPrompt = systemMessages.map((m) => m.content || '').join('\n');
         expect(systemPrompt).toBe('You are helpful\nBe concise');
       });
