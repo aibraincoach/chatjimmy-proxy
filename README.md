@@ -128,6 +128,8 @@ Returns proxy health plus upstream data and round-trip latency.
 
 OpenAI-compatible chat completions endpoint. Any standard OpenAI SDK client can use this proxy as a drop-in backend.
 
+> **Note:** `/api/v1/chat/completions` also works as a direct path. The `/v1/` prefix is rewritten to `/api/v1/` internally via `next.config.js` rewrites, so both paths hit the same handler.
+
 Inspired by [for-the-zero's cj2api.ts](https://gist.github.com/for-the-zero/0a5b57f98799dfce404971f8fbb548f0) — a Cloudflare Workers proxy for ChatJimmy that implements the OpenAI format. We build on that idea with proper SSE streaming, system prompt handling, and full error handling.
 
 **Request body**
