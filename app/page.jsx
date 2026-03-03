@@ -120,6 +120,22 @@ function getHelpDocSections(baseUrl) {
   };
 }
 
+const VERSION = process.env.NEXT_PUBLIC_APP_VERSION || 'unknown';
+const COMMIT_SHA = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || 'unknown';
+const BUILD_TIMESTAMP = process.env.NEXT_PUBLIC_BUILD_TIMESTAMP || 'unknown';
+
+const WHY_THIS_EXISTS_LINES = [
+  'WHY THIS EXISTS',
+  '',
+  "ChatJimmy.ai is a demo chatbot built by Taalas (taalas.com) to showcase their HC1 chip — custom silicon that hardwires Meta's Llama 3.1 8B directly into the hardware. The result: ~17,000 tokens per second per user, roughly 10x faster than the next fastest inference provider, at a fraction of the cost and power.",
+  '',
+  'But a chatbot is just a toy. The real power of sub-millisecond inference is in programmatic access — applications where microseconds matter: real-time agents, high-frequency decision loops, latency-sensitive pipelines, and any workflow where waiting 500ms for a response is a dealbreaker.',
+  '',
+  "This proxy exists to unlock that power. It wraps ChatJimmy's frontend-only interface in a clean, OpenAI-compatible API so developers can build real applications on top of the fastest inference hardware in the world.",
+  '',
+  'Architecture: Your app → This proxy → Taalas HC1 silicon → response in under 5ms.',
+];
+
 function getHelpPayload(commandText) {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const normalized = commandText.trim().toLowerCase();
@@ -140,11 +156,24 @@ function getHelpPayload(commandText) {
   return {
     title: 'API Help: chatjimmy-proxy',
     intro: [
+      ...WHY_THIS_EXISTS_LINES,
+      '',
       `Base URL: ${baseUrl}`,
       'Authentication: none required.',
       'Upstream: chatjimmy.ai running Llama 3.1 8B by Taalas Inc.',
     ],
     sections: [...sections.chat, ...sections.health, ...sections.models],
+  };
+}
+
+function getVersionPayload() {
+  return {
+    title: 'Proxy Version',
+    lines: [
+      `version: ${VERSION}`,
+      `commit: ${COMMIT_SHA}`,
+      `buildTimestamp: ${BUILD_TIMESTAMP}`,
+    ],
   };
 }
 
@@ -197,6 +226,17 @@ export default function HomePage() {
         ...current,
         { role: 'user', content: outgoingMessage },
         { role: 'assistant', content: '', type: 'help', helpPayload },
+      ]);
+      pushLog('command', `${outgoingMessage} (intercepted — not sent to API)`);
+      return;
+    }
+
+    if (/^\/version$/i.test(outgoingMessage)) {
+      const versionPayload = getVersionPayload();
+      setMessages((current) => [
+        ...current,
+        { role: 'user', content: outgoingMessage },
+        { role: 'assistant', content: '', type: 'version', versionPayload },
       ]);
       pushLog('command', `${outgoingMessage} (intercepted — not sent to API)`);
       return;
@@ -377,6 +417,13 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
+              ) : msg.type === 'version' ? (
+                <div style={styles.helpDoc}>
+                  <div style={styles.helpTitle}>{msg.versionPayload.title}</div>
+                  {msg.versionPayload.lines.map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                </div>
               ) : (
                 <div>{msg.content || (msg.role === 'assistant' && isSending ? '…' : '')}</div>
               )}
@@ -393,7 +440,7 @@ export default function HomePage() {
               placeholder="Ask something..."
               disabled={isSending}
             />
-            <div style={styles.hint}>Type /help for API docs</div>
+            <div style={styles.hint}>Type /help for API docs or /version for build info</div>
           </div>
           <button style={styles.button} type="submit" disabled={!canSend}>
             {isSending ? 'Streaming...' : 'Send'}
