@@ -67,6 +67,12 @@ export async function GET() {
         latencyMs,
         upstreamStatus: upstream.status,
         upstream: upstreamJson,
+        endpoints: [
+          '/api/chat',
+          '/api/health',
+          '/api/models',
+          '/v1/chat/completions',
+        ],
       },
       { status: 200, headers: corsHeaders() },
     );

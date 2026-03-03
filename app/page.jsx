@@ -117,6 +117,83 @@ function getHelpDocSections(baseUrl) {
 ]`,
       },
     ],
+    completions: [
+      {
+        title: 'POST /v1/chat/completions',
+        description:
+          'OpenAI-compatible chat completions endpoint. Works as a drop-in backend for any standard OpenAI SDK client. Supports both streaming (SSE) and non-streaming responses.',
+      },
+      {
+        title: 'Non-streaming request',
+        code: `curl -X POST "${baseUrl}/v1/chat/completions" \\\n  -H "Content-Type: application/json" \\\n  -d '{
+    "model": "llama3.1-8B",
+    "messages": [
+      {"role": "system", "content": "You are helpful."},
+      {"role": "user", "content": "What is 2+2?"}
+    ],
+    "stream": false
+  }'`,
+      },
+      {
+        title: 'Streaming request (SSE)',
+        code: `curl -N -X POST "${baseUrl}/v1/chat/completions" \\\n  -H "Content-Type: application/json" \\\n  -d '{
+    "model": "llama3.1-8B",
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ],
+    "stream": true
+  }'`,
+      },
+      {
+        title: 'Python OpenAI SDK example',
+        code: `from openai import OpenAI
+
+client = OpenAI(
+    base_url="${baseUrl}/v1",
+    api_key="anything"
+)
+response = client.chat.completions.create(
+    model="llama3.1-8B",
+    messages=[
+        {"role": "system", "content": "You are helpful."},
+        {"role": "user", "content": "What is 2+2?"}
+    ]
+)
+print(response.choices[0].message.content)`,
+      },
+      {
+        title: 'Request body schema',
+        code: `{
+  "model": "string (default: \"llama3.1-8B\")",
+  "messages": [
+    { "role": "system | user | assistant", "content": "string" }
+  ],
+  "stream": "boolean (default: false)",
+  "top_k": "number (default: 8, also accepts topK)"
+}`,
+      },
+      {
+        title: 'Non-streaming response schema',
+        code: `{
+  "id": "chatcmpl-...",
+  "object": "chat.completion",
+  "created": 1725840132,
+  "model": "llama3.1-8B",
+  "choices": [
+    {
+      "index": 0,
+      "message": { "role": "assistant", "content": "string" },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": -1,
+    "completion_tokens": -1,
+    "total_tokens": -1
+  }
+}`,
+      },
+    ],
   };
 }
 
@@ -153,6 +230,10 @@ function getHelpPayload(commandText) {
     return { title: 'API Help: /api/models', sections: sections.models };
   }
 
+  if (normalized === '/help completions') {
+    return { title: 'API Help: /v1/chat/completions', sections: sections.completions };
+  }
+
   return {
     title: 'API Help: chatjimmy-proxy',
     intro: [
@@ -162,7 +243,7 @@ function getHelpPayload(commandText) {
       'Authentication: none required.',
       'Upstream: chatjimmy.ai running Llama 3.1 8B by Taalas Inc.',
     ],
-    sections: [...sections.chat, ...sections.health, ...sections.models],
+    sections: [...sections.chat, ...sections.health, ...sections.models, ...sections.completions],
   };
 }
 
@@ -228,7 +309,7 @@ export default function HomePage() {
     const outgoingMessage = input.trim();
     setInput('');
 
-    if (/^\/help(\s+(chat|health|models))?$/i.test(outgoingMessage)) {
+    if (/^\/help(\s+(chat|health|models|completions))?$/i.test(outgoingMessage)) {
       const helpPayload = getHelpPayload(outgoingMessage);
       setMessages((current) => [
         ...current,
