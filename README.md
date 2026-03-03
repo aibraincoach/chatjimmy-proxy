@@ -1,3 +1,5 @@
+> Repository: https://github.com/aibraincoach/chatjimmy-proxy
+
 # chatjimmy-proxy
 
 Educational Next.js 14 proxy that forwards chat calls to `https://chatjimmy.ai` and supports both raw streaming passthrough and normalized JSON responses while exposing a live in-browser network inspector.
@@ -267,4 +269,6 @@ No environment variables are required for the basic proxy flow.
 
 ## Disclaimer
 
-This educational proxy is built in collaboration with the ChatJimmy dev team. Always review and comply with service terms before production or automated usage: https://taalas.com/terms-conditions.
+This is an independent educational project. It is not affiliated with, endorsed by, or built in collaboration with Taalas or the ChatJimmy team. Always review and comply with service terms before production or automated usage: https://taalas.com/terms-conditions.
+
+Contact: hello@aibrain.coach
