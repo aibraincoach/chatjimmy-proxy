@@ -7,6 +7,14 @@ const nextConfig = {
     NEXT_PUBLIC_APP_VERSION: version,
     NEXT_PUBLIC_BUILD_TIMESTAMP: new Date().toISOString(),
   },
+  async rewrites() {
+    return [
+      {
+        source: '/v1/:path*',
+        destination: '/api/v1/:path*',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

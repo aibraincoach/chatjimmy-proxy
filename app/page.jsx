@@ -121,7 +121,7 @@ function getHelpDocSections(baseUrl) {
       {
         title: 'POST /v1/chat/completions',
         description:
-          'OpenAI-compatible chat completions endpoint. Works as a drop-in backend for any standard OpenAI SDK client. Supports both streaming (SSE) and non-streaming responses.',
+          'OpenAI-compatible chat completions endpoint. Works as a drop-in backend for any standard OpenAI SDK client. Supports both streaming (SSE) and non-streaming responses. Note: /api/v1/chat/completions also works as a direct path.',
       },
       {
         title: 'Non-streaming request',
