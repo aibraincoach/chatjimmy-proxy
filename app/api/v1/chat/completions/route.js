@@ -10,9 +10,10 @@
  */
 
 import { corsHeaders } from '../../../../lib/cors';
+import { STATS_BLOCK_PATTERN, safeParseJson, pickNumber } from '../../../../lib/parse';
+import { generateId, makeMessage } from '../../../../lib/format';
 
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
-const STATS_BLOCK_PATTERN = /<\|stats\|>([\s\S]*?)<\|\/stats\|>/;
 const UPSTREAM_TIMEOUT_MS = 30_000;
 const MAX_MESSAGES = 50;
 const MAX_CONTENT_LENGTH = 100_000;
@@ -24,37 +25,6 @@ function completionsCors() {
   return headers;
 }
 
-function makeMessage(role, content, indexOffset = 0) {
-  const now = Date.now();
-  return {
-    role,
-    content,
-    id: `${role}-${now}-${indexOffset}`,
-    createdAt: new Date(now + indexOffset).toISOString(),
-  };
-}
-
-function generateId() {
-  return `chatcmpl-${crypto.randomUUID().replace(/-/g, '').slice(0, 24)}`;
-}
-
-function safeParseJson(value) {
-  if (!value) return null;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
-
-function pickNumber(source, keys) {
-  if (!source || typeof source !== 'object') return null;
-  for (const key of keys) {
-    const value = source[key];
-    if (typeof value === 'number') return value;
-  }
-  return null;
-}
 
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: completionsCors() });

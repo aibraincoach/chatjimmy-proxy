@@ -1,7 +1,8 @@
 import { corsHeaders, handleOptions } from '../../lib/cors';
+import { STATS_BLOCK_PATTERN, safeParseJson, pickNumber, getCreatedTimestamp, getFinishReason } from '../../lib/parse';
+import { makeMessage } from '../../lib/format';
 
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
-const STATS_BLOCK_PATTERN = /<\|stats\|>([\s\S]*?)<\|\/stats\|>/;
 
 const PROXY_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '0.4.0';
 const PROXY_COMMIT_SHA = process.env.VERCEL_GIT_COMMIT_SHA || '';
@@ -13,17 +14,6 @@ const UPSTREAM_TIMEOUT_MS = 30_000;
 
 function chatCors() {
   return corsHeaders('POST, OPTIONS');
-}
-
-function makeMessage(role, content, indexOffset = 0) {
-  const now = Date.now();
-  // We generate IDs/timestamps to mimic the shape expected by ChatJimmy's backend contract.
-  return {
-    role,
-    content,
-    id: `${role}-${now}-${indexOffset}`,
-    createdAt: new Date(now + indexOffset).toISOString(),
-  };
 }
 
 export async function OPTIONS() {
@@ -212,43 +202,3 @@ export async function POST(request) {
   }
 }
 
-function safeParseJson(value) {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
-
-function pickNumber(source, keys) {
-  if (!source || typeof source !== 'object') {
-    return null;
-  }
-
-  for (const key of keys) {
-    const value = source[key];
-    if (typeof value === 'number') {
-      return value;
-    }
-  }
-
-  return null;
-}
-
-function getCreatedTimestamp(stats) {
-  const createdAt = stats && typeof stats.created_at === 'string' ? Date.parse(stats.created_at) : NaN;
-  if (!Number.isNaN(createdAt)) {
-    return Math.floor(createdAt / 1000);
-  }
-
-  return Math.floor(Date.now() / 1000);
-}
-
-function getFinishReason(stats) {
-  const doneReason = stats && typeof stats.done_reason === 'string' ? stats.done_reason.trim() : '';
-  return doneReason || 'stop';
-}
