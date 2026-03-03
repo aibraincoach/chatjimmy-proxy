@@ -251,6 +251,14 @@ npm run dev
 
 Then open `http://localhost:3000`.
 
+### Integration tests
+
+```bash
+# Requires: curl, jq (brew install jq)
+./test-endpoints.sh                          # test production
+./test-endpoints.sh http://localhost:3000     # test local dev
+```
+
 ## Production build
 
 ```bash
