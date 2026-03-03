@@ -1,4 +1,5 @@
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
+const STATS_BLOCK_PATTERN = /<\|stats\|>([\s\S]*?)<\|\/stats\|>/;
 
 function corsHeaders() {
   return {
@@ -25,6 +26,10 @@ export async function OPTIONS() {
 
 export async function POST(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const format = searchParams.get('format');
+    const isJsonFormat = format === 'json';
+
     const body = await request.json();
     const history = Array.isArray(body.history) ? body.history : [];
     const message = typeof body.message === 'string' ? body.message : '';
@@ -59,6 +64,75 @@ export async function POST(request) {
       body: JSON.stringify(upstreamPayload),
     });
 
+    if (isJsonFormat) {
+      const upstreamText = await upstream.text();
+
+      if (!upstream.ok) {
+        return Response.json(
+          {
+            error: 'Upstream chat request failed',
+            status: upstream.status,
+            details: upstreamText || null,
+          },
+          { status: upstream.status, headers: corsHeaders() },
+        );
+      }
+
+      const statsMatch = upstreamText.match(STATS_BLOCK_PATTERN);
+      const statsRaw = statsMatch?.[1]?.trim();
+      const stats = safeParseJson(statsRaw);
+      const assistantContent = statsMatch
+        ? upstreamText.replace(STATS_BLOCK_PATTERN, '').trim()
+        : upstreamText.trim();
+
+      const prefillTokens = pickNumber(stats, ['prefill_tokens', 'prompt_eval_count']);
+      const decodeTokens = pickNumber(stats, ['decode_tokens', 'eval_count']);
+      const totalTokens =
+        pickNumber(stats, ['total_tokens']) ??
+        (typeof prefillTokens === 'number' && typeof decodeTokens === 'number'
+          ? prefillTokens + decodeTokens
+          : null);
+      const totalDuration = pickNumber(stats, ['total_duration']);
+
+      const created = getCreatedTimestamp(stats);
+      const finishReason = getFinishReason(stats);
+
+      const jsonHeaders = new Headers(corsHeaders());
+      jsonHeaders.set('Content-Type', 'application/json; charset=utf-8');
+      jsonHeaders.set('Cache-Control', 'no-store');
+
+      return new Response(
+        JSON.stringify({
+          id: crypto.randomUUID(),
+          object: 'chat.completion',
+          created,
+          model: upstreamPayload.chatOptions.selectedModel,
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: 'assistant',
+                content: assistantContent,
+              },
+              finish_reason: finishReason,
+            },
+          ],
+          usage: stats
+            ? {
+                prefill_tokens: prefillTokens,
+                decode_tokens: decodeTokens,
+                total_tokens: totalTokens,
+                total_duration: totalDuration,
+              }
+            : null,
+        }),
+        {
+          status: upstream.status,
+          headers: jsonHeaders,
+        },
+      );
+    }
+
     if (!upstream.body) {
       return Response.json(
         { error: 'Upstream did not return a stream body' },
@@ -81,4 +155,45 @@ export async function POST(request) {
       { status: 500, headers: corsHeaders() },
     );
   }
+}
+
+function safeParseJson(value) {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function pickNumber(source, keys) {
+  if (!source || typeof source !== 'object') {
+    return null;
+  }
+
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'number') {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function getCreatedTimestamp(stats) {
+  const createdAt = stats && typeof stats.created_at === 'string' ? Date.parse(stats.created_at) : NaN;
+  if (!Number.isNaN(createdAt)) {
+    return Math.floor(createdAt / 1000);
+  }
+
+  return Math.floor(Date.now() / 1000);
+}
+
+function getFinishReason(stats) {
+  const doneReason = stats && typeof stats.done_reason === 'string' ? stats.done_reason.trim() : '';
+  return doneReason || 'stop';
 }
