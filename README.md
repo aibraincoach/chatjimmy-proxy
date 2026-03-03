@@ -124,6 +124,109 @@ Returns proxy health plus upstream data and round-trip latency.
 }
 ```
 
+### `POST /v1/chat/completions`
+
+OpenAI-compatible chat completions endpoint. Any standard OpenAI SDK client can use this proxy as a drop-in backend.
+
+Inspired by [for-the-zero's cj2api.ts](https://gist.github.com/for-the-zero/0a5b57f98799dfce404971f8fbb548f0) — a Cloudflare Workers proxy for ChatJimmy that implements the OpenAI format. We build on that idea with proper SSE streaming, system prompt handling, and full error handling.
+
+**Request body**
+
+```json
+{
+  "model": "llama3.1-8B",
+  "messages": [
+    {"role": "system", "content": "You are helpful."},
+    {"role": "user", "content": "What is 2+2?"}
+  ],
+  "stream": false,
+  "top_k": 8
+}
+```
+
+- `model`: optional, defaults to `"llama3.1-8B"`
+- `messages`: required, array of `{role, content}` objects
+- `stream`: optional boolean, defaults to `false`
+- `top_k` or `topK`: optional, defaults to `8`
+- `Authorization` header: ignored (ChatJimmy has no auth — send anything or nothing)
+
+System messages are extracted from the messages array, concatenated, and passed as `chatOptions.systemPrompt` to ChatJimmy.
+
+**Non-streaming example**
+
+```bash
+curl -X POST "http://localhost:3000/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "llama3.1-8B",
+    "messages": [
+      {"role": "system", "content": "You are helpful."},
+      {"role": "user", "content": "What is 2+2?"}
+    ]
+  }'
+```
+
+**Non-streaming response**
+
+```json
+{
+  "id": "chatcmpl-a1b2c3d4e5f6g7h8i9j0k1l2",
+  "object": "chat.completion",
+  "created": 1725840132,
+  "model": "llama3.1-8B",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "2 + 2 = 4."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": -1,
+    "completion_tokens": -1,
+    "total_tokens": -1
+  }
+}
+```
+
+**Streaming example (SSE)**
+
+```bash
+curl -N -X POST "http://localhost:3000/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "llama3.1-8B",
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ],
+    "stream": true
+  }'
+```
+
+The streaming response uses Server-Sent Events format (`Content-Type: text/event-stream`).
+
+**Using with the Python OpenAI SDK**
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://chatjimmy-proxy-three.vercel.app/v1",
+    api_key="anything"
+)
+response = client.chat.completions.create(
+    model="llama3.1-8B",
+    messages=[
+        {"role": "system", "content": "You are helpful."},
+        {"role": "user", "content": "What is 2+2?"}
+    ]
+)
+print(response.choices[0].message.content)
+```
+
 ### `GET /api/models`
 
 Returns the upstream models payload (OpenAI-compatible list format).
