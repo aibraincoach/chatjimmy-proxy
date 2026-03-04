@@ -281,4 +281,4 @@ No environment variables are required for the basic proxy flow.
 This is an independent educational project. It is not affiliated with, endorsed by, or built in collaboration with Taalas or the ChatJimmy team. Always review and comply with service terms before production or automated usage: https://taalas.com/terms-conditions.
 
 Contact: hello@aibrain.coach  
-GitHub: @tinhead168
+GitHub: [@tinhead168](https://github.com/tinhead168)
