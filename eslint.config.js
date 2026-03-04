@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import eslintConfigPrettier from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default [
   {
@@ -11,13 +12,15 @@ export default [
       ...js.configs.recommended.languageOptions,
       sourceType: 'module',
       ecmaVersion: 2022,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
     },
   },
   {
     files: ['**/*.jsx'],
     languageOptions: {
-      sourceType: 'module',
-      ecmaVersion: 2022,
       parserOptions: {
         ecmaFeatures: {
           jsx: true,
