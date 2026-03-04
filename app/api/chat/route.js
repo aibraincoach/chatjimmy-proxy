@@ -7,7 +7,13 @@ import {
   getFinishReason,
 } from '../../lib/parse';
 import { validateChatMessage, validateChatHistory } from '../../lib/validation';
-import { makeMessage, PROXY_VERSION, PROXY_COMMIT_SHA, PROXY_BUILD_TIMESTAMP, PROXY_USER_AGENT } from '../../lib/format';
+import {
+  makeMessage,
+  PROXY_VERSION,
+  PROXY_COMMIT_SHA,
+  PROXY_BUILD_TIMESTAMP,
+  PROXY_USER_AGENT,
+} from '../../lib/format';
 
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
 const UPSTREAM_TIMEOUT_MS = 30_000;
@@ -74,10 +80,7 @@ export async function POST(request) {
     } catch (err) {
       clearTimeout(timeout);
       if (err.name === 'AbortError') {
-        return Response.json(
-          { error: 'Upstream timeout' },
-          { status: 504, headers: chatCors() },
-        );
+        return Response.json({ error: 'Upstream timeout' }, { status: 504, headers: chatCors() });
       }
       console.error('Upstream fetch failed:', err);
       return Response.json(
