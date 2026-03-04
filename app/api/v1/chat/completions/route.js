@@ -15,7 +15,7 @@ import {
   validateCompletionMessages,
   validateCompletionContentLength,
 } from '../../../../lib/validation';
-import { generateId, makeMessage } from '../../../../lib/format';
+import { generateId, makeMessage, PROXY_USER_AGENT } from '../../../../lib/format';
 
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
 const UPSTREAM_TIMEOUT_MS = 30_000;
@@ -97,7 +97,7 @@ export async function POST(request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'chatjimmy-proxy/0.1.0 (educational project)',
+          'User-Agent': PROXY_USER_AGENT,
         },
         body: JSON.stringify(upstreamPayload),
         signal: controller.signal,
@@ -150,12 +150,12 @@ export async function POST(request) {
     const completionId = generateId();
     const created = Math.floor(Date.now() / 1000);
 
-    const promptTokens = pickNumber(stats, ['prefill_tokens', 'prompt_eval_count']) ?? -1;
-    const completionTokens = pickNumber(stats, ['decode_tokens', 'eval_count']) ?? -1;
+    const promptTokens = pickNumber(stats, ['prefill_tokens', 'prompt_eval_count']) ?? null;
+    const completionTokens = pickNumber(stats, ['decode_tokens', 'eval_count']) ?? null;
     const totalTokens =
-      promptTokens >= 0 && completionTokens >= 0
+      typeof promptTokens === 'number' && typeof completionTokens === 'number'
         ? promptTokens + completionTokens
-        : (pickNumber(stats, ['total_tokens']) ?? -1);
+        : (pickNumber(stats, ['total_tokens']) ?? null);
 
     if (stream) {
       const contentChunk = JSON.stringify({

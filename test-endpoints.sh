@@ -347,7 +347,7 @@ fi
 section "10. Concurrency (10 simultaneous requests)"
 
 CONC_DIR=$(mktemp -d)
-CONC_START=$(date +%s%N 2>/dev/null || python3 -c 'import time; print(int(time.time()*1e9))' 2>/dev/null || echo 0)
+CONC_START=$(date +%s)
 
 for i in $(seq 1 10); do
   (
@@ -360,7 +360,7 @@ for i in $(seq 1 10); do
 done
 wait
 
-CONC_END=$(date +%s%N 2>/dev/null || python3 -c 'import time; print(int(time.time()*1e9))' 2>/dev/null || echo 0)
+CONC_END=$(date +%s)
 
 CONC_OK=0
 CONC_FAIL=0
@@ -375,7 +375,7 @@ done
 rm -rf "$CONC_DIR"
 
 if [[ "$CONC_START" != "0" && "$CONC_END" != "0" ]]; then
-  CONC_ELAPSED_MS=$(( (CONC_END - CONC_START) / 1000000 ))
+  CONC_ELAPSED_MS=$(( (CONC_END - CONC_START) * 1000 ))
   echo -e "  ${CYAN}→${RESET} Completed in ${CONC_ELAPSED_MS}ms"
 fi
 
@@ -395,15 +395,15 @@ section "11. Latency benchmark (5 sequential requests)"
 
 LATENCY_SUM=0
 for i in $(seq 1 5); do
-  REQ_START=$(date +%s%N 2>/dev/null || python3 -c 'import time; print(int(time.time()*1e9))' 2>/dev/null || echo 0)
+  REQ_START=$(date +%s)
   curl -s -o /dev/null -X POST "$BASE_URL/api/chat?format=json" \
     -H "Content-Type: application/json" \
     -d '{"message":"ping","history":[]}' \
     --max-time 30 2>/dev/null || true
-  REQ_END=$(date +%s%N 2>/dev/null || python3 -c 'import time; print(int(time.time()*1e9))' 2>/dev/null || echo 0)
+  REQ_END=$(date +%s)
 
   if [[ "$REQ_START" != "0" && "$REQ_END" != "0" ]]; then
-    REQ_MS=$(( (REQ_END - REQ_START) / 1000000 ))
+    REQ_MS=$(( (REQ_END - REQ_START) * 1000 ))
     LATENCY_SUM=$((LATENCY_SUM + REQ_MS))
     echo -e "  ${CYAN}→${RESET} Request $i: ${REQ_MS}ms"
   else
