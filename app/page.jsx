@@ -250,11 +250,7 @@ function getHelpPayload(commandText) {
 function getVersionPayload() {
   return {
     title: 'Proxy Version',
-    lines: [
-      `version: ${VERSION}`,
-      `commit: ${COMMIT_SHA}`,
-      `buildTimestamp: ${BUILD_TIMESTAMP}`,
-    ],
+    lines: [`version: ${VERSION}`, `commit: ${COMMIT_SHA}`, `buildTimestamp: ${BUILD_TIMESTAMP}`],
   };
 }
 
@@ -287,7 +283,10 @@ export default function HomePage() {
         const response = await fetch('/api/health');
         const data = await response.json();
         if (!mounted) return;
-        setConnection({ status: data.proxy === 'ok' ? 'online' : 'degraded', latencyMs: data.latencyMs });
+        setConnection({
+          status: data.proxy === 'ok' ? 'online' : 'degraded',
+          latencyMs: data.latencyMs,
+        });
         pushLog('health', JSON.stringify(data));
       } catch (error) {
         if (!mounted) return;
@@ -478,7 +477,12 @@ export default function HomePage() {
     }
   }
 
-  const statusColor = connection.status === 'online' ? '#45d483' : connection.status === 'checking' ? '#ffc857' : '#ff6b6b';
+  const statusColor =
+    connection.status === 'online'
+      ? '#45d483'
+      : connection.status === 'checking'
+        ? '#ffc857'
+        : '#ff6b6b';
 
   return (
     <main style={styles.main}>
@@ -699,6 +703,7 @@ const styles = {
     fontSize: '12px',
     lineHeight: 1.5,
     overflowX: 'auto',
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+    fontFamily:
+      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
   },
 };
