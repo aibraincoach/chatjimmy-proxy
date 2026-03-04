@@ -44,6 +44,7 @@ Proxy chat endpoint used by the UI.
 ```
 
 **Behavior**
+
 - Transforms messages into ChatJimmy's expected shape (`id`, `createdAt`)
 - Adds:
   - `chatOptions.selectedModel = "llama3.1-8B"`
@@ -54,7 +55,6 @@ Proxy chat endpoint used by the UI.
 - Supports two output modes:
   - **Default streaming mode** (`POST /api/chat`): streams raw upstream data back unchanged (`0:` token lines + metadata)
   - **Normalized JSON mode** (`POST /api/chat?format=json`): buffers the full upstream response, removes `<|stats|>...<|/stats|>` metadata blocks, parses stats, and returns an OpenAI-compatible `chat.completion` JSON payload
-
 
 **Streaming mode example**
 
@@ -140,8 +140,8 @@ Inspired by [for-the-zero's cj2api.ts](https://gist.github.com/for-the-zero/0a5b
 {
   "model": "llama3.1-8B",
   "messages": [
-    {"role": "system", "content": "You are helpful."},
-    {"role": "user", "content": "What is 2+2?"}
+    { "role": "system", "content": "You are helpful." },
+    { "role": "user", "content": "What is 2+2?" }
   ],
   "stream": false,
   "top_k": 8
@@ -238,6 +238,7 @@ Returns the upstream models payload (OpenAI-compatible list format).
 ## UI
 
 The home page (`app/page.jsx`) is a split-screen interface:
+
 - Left: chat panel with streaming assistant output
 - Right: live inspector showing request payload, proxy route, raw stream lines, and final transfer stats
 - Top badge shows `/api/health` status on mount

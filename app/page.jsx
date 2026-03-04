@@ -42,13 +42,13 @@ function getHelpDocSections(baseUrl) {
   "message": "string (required)",
   "history": [
     {
-      "role": "string (default: \"user\")",
-      "content": "string (default: \"\")"
+      "role": "string (default: "user")",
+      "content": "string (default: "")"
     }
   ],
   "chatOptions": {
-    "selectedModel": "string (default forwarded upstream: \"llama3.1-8B\")",
-    "systemPrompt": "string (default: \"\")",
+    "selectedModel": "string (default forwarded upstream: "llama3.1-8B")",
+    "systemPrompt": "string (default: "")",
     "topK": "number (default: 8)"
   }
 }`,
@@ -164,7 +164,7 @@ print(response.choices[0].message.content)`,
       {
         title: 'Request body schema',
         code: `{
-  "model": "string (default: \"llama3.1-8B\")",
+  "model": "string (default: "llama3.1-8B")",
   "messages": [
     { "role": "system | user | assistant", "content": "string" }
   ],
