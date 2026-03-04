@@ -7,14 +7,15 @@ import {
   getFinishReason,
 } from '../../lib/parse';
 import { validateChatMessage, validateChatHistory } from '../../lib/validation';
-import { makeMessage } from '../../lib/format';
+import {
+  makeMessage,
+  PROXY_VERSION,
+  PROXY_COMMIT_SHA,
+  PROXY_BUILD_TIMESTAMP,
+  PROXY_USER_AGENT,
+} from '../../lib/format';
 
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
-
-const PROXY_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '0.4.0';
-const PROXY_COMMIT_SHA = process.env.VERCEL_GIT_COMMIT_SHA || '';
-const PROXY_BUILD_TIMESTAMP = process.env.NEXT_PUBLIC_BUILD_TIMESTAMP || new Date().toISOString();
-
 const UPSTREAM_TIMEOUT_MS = 30_000;
 
 function chatCors() {
@@ -71,7 +72,7 @@ export async function POST(request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'chatjimmy-proxy/0.1.0 (educational project)',
+          'User-Agent': PROXY_USER_AGENT,
         },
         body: JSON.stringify(upstreamPayload),
         signal: controller.signal,
@@ -79,10 +80,7 @@ export async function POST(request) {
     } catch (err) {
       clearTimeout(timeout);
       if (err.name === 'AbortError') {
-        return Response.json(
-          { error: 'Upstream timeout', status: 504 },
-          { status: 504, headers: chatCors() },
-        );
+        return Response.json({ error: 'Upstream timeout' }, { status: 504, headers: chatCors() });
       }
       console.error('Upstream fetch failed:', err);
       return Response.json(
@@ -97,10 +95,7 @@ export async function POST(request) {
 
       if (!upstream.ok) {
         return Response.json(
-          {
-            error: 'Upstream chat request failed',
-            status: upstream.status,
-          },
+          { error: 'Upstream chat request failed' },
           { status: upstream.status, headers: chatCors() },
         );
       }
@@ -169,7 +164,7 @@ export async function POST(request) {
       const errorText = await upstream.text();
       console.error('Upstream non-2xx in streaming path:', upstream.status, errorText);
       return Response.json(
-        { error: 'Upstream chat request failed', status: upstream.status },
+        { error: 'Upstream chat request failed' },
         { status: upstream.status, headers: chatCors() },
       );
     }

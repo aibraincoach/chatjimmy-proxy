@@ -189,9 +189,9 @@ curl -X POST "http://localhost:3000/v1/chat/completions" \
     }
   ],
   "usage": {
-    "prompt_tokens": -1,
-    "completion_tokens": -1,
-    "total_tokens": -1
+    "prompt_tokens": null,
+    "completion_tokens": null,
+    "total_tokens": null
   }
 }
 ```

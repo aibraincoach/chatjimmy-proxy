@@ -1,4 +1,5 @@
 import { corsHeaders, handleOptions } from '../../lib/cors';
+import { PROXY_USER_AGENT } from '../../lib/format';
 
 const HEALTH_ENDPOINT = 'https://chatjimmy.ai/api/health';
 const UPSTREAM_TIMEOUT_MS = 30_000;
@@ -18,7 +19,7 @@ export async function GET() {
     try {
       upstream = await fetch(HEALTH_ENDPOINT, {
         headers: {
-          'User-Agent': 'chatjimmy-proxy/0.1.0 (educational project)',
+          'User-Agent': PROXY_USER_AGENT,
         },
         cache: 'no-store',
         signal: controller.signal,
@@ -27,7 +28,7 @@ export async function GET() {
       clearTimeout(timeout);
       if (err.name === 'AbortError') {
         return Response.json(
-          { error: 'Upstream timeout', status: 504 },
+          { error: 'Upstream timeout' },
           { status: 504, headers: corsHeaders() },
         );
       }
