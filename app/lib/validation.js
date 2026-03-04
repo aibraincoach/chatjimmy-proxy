@@ -2,7 +2,7 @@
  * Shared validation functions for ChatJimmy proxy endpoints
  */
 
-export const MAX_MESSAGE_LENGTH = 10_000;
+export const MAX_MESSAGE_LENGTH = 25_000;
 export const MAX_HISTORY_LENGTH = 50;
 export const MAX_MESSAGES = 50;
 export const MAX_CONTENT_LENGTH = 100_000;
