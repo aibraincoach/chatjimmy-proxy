@@ -3,7 +3,7 @@
  */
 
 export const PROXY_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '0.4.0';
-export const PROXY_COMMIT_SHA = process.env.VERCEL_GIT_COMMIT_SHA || '';
+export const PROXY_COMMIT_SHA = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || '';
 export const PROXY_BUILD_TIMESTAMP = process.env.NEXT_PUBLIC_BUILD_TIMESTAMP || new Date().toISOString();
 export const PROXY_USER_AGENT = `chatjimmy-proxy/${PROXY_VERSION} (educational project)`;
 
