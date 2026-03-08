@@ -69,7 +69,7 @@ export async function GET() {
     console.error('Health proxy error:', error);
     return Response.json(
       { error: 'Internal proxy error' },
-      { status: 502, headers: corsHeaders() },
+      { status: 500, headers: corsHeaders() },
     );
   }
 }
