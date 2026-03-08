@@ -1,5 +1,6 @@
 import { corsHeaders, handleOptions } from '../../lib/cors';
 import { PROXY_USER_AGENT } from '../../lib/format';
+import { upstreamAgent } from '../../lib/config';
 
 const HEALTH_ENDPOINT = 'https://chatjimmy.ai/api/health';
 const UPSTREAM_TIMEOUT_MS = 30_000;
@@ -23,6 +24,7 @@ export async function GET() {
         },
         cache: 'no-store',
         signal: controller.signal,
+        dispatcher: upstreamAgent,
       });
     } catch (err) {
       clearTimeout(timeout);

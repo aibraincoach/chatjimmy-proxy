@@ -16,6 +16,7 @@ import {
   validateCompletionContentLength,
 } from '../../../../lib/validation';
 import { generateId, makeMessage, PROXY_USER_AGENT } from '../../../../lib/format';
+import { upstreamAgent } from '../../../../lib/config';
 
 const CHAT_ENDPOINT = 'https://chatjimmy.ai/api/chat';
 const UPSTREAM_TIMEOUT_MS = 30_000;
@@ -101,6 +102,7 @@ export async function POST(request) {
         },
         body: JSON.stringify(upstreamPayload),
         signal: controller.signal,
+        dispatcher: upstreamAgent,
       });
     } catch (err) {
       clearTimeout(timeout);
