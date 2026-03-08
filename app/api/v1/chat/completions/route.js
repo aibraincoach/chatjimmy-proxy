@@ -38,10 +38,7 @@ export async function POST(request) {
 
     const messagesError = validateCompletionMessages(body.messages);
     if (messagesError) {
-      return Response.json(
-        { error: messagesError },
-        { status: 400, headers: completionsCors() },
-      );
+      return Response.json({ error: messagesError }, { status: 400, headers: completionsCors() });
     }
 
     const contentLengthError = validateCompletionContentLength(body.messages);
