@@ -49,3 +49,12 @@ Add a session summary block at the bottom of this file.
 - Identified 4 priority fixes: User-Agent version, token null, error format consistency, shell script macOS compat
 - Confirmed burst-mode streaming is intentional and correct for HC1 throughput
 - No code changes this session
+
+### Session: 2026-03-08 — Fix Places Pagination (nextPageToken field mask)
+
+- Created `app/api/places/nearby/route.js` — new Google Places Text Search (New) proxy route
+- Root cause: Google Places (New) API requires `nextPageToken` in `X-Goog-FieldMask` explicitly; unlike legacy API it is never returned automatically
+- Fix: included `nextPageToken` in the `FIELD_MASK` constant alongside place fields
+- Updated `PLANNING.md`: added "Google Places API — Confirmed Behavior" section documenting the field mask requirement
+- Created `issues.md` and logged I.20
+- Build confirmed clean

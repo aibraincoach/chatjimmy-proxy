@@ -57,6 +57,10 @@ Returns Vercel AI SDK stream format: 0:"token" lines, followed by a <|stats|>...
 - No auth: ChatJimmy has no auth. Documented clearly.
 - Public repo: No secrets, no proprietary logic. Private notes live in a separate private repo.
 
+## Google Places API — Confirmed Behavior
+
+- `nextPageToken` must be explicitly included in `X-Goog-FieldMask` or it is never returned by the New API. The legacy Places API returned it automatically; the New API (`places.googleapis.com/v1`) does not. Omitting it silently breaks pagination with no error.
+
 ## Known Upstream Fragility
 
 - Stats block format (<|stats|>...<|/stats|>) is undocumented and could change
