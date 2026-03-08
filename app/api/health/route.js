@@ -36,11 +36,7 @@ export async function GET() {
       }
       console.error('Health upstream fetch failed:', err);
       return Response.json(
-        {
-          proxy: 'error',
-          latencyMs: Date.now() - startedAt,
-          error: 'Upstream connection failed',
-        },
+        { error: 'Upstream connection failed' },
         { status: 502, headers: corsHeaders() },
       );
     }
@@ -50,12 +46,7 @@ export async function GET() {
       const errorText = await upstream.text();
       console.error('Health upstream non-2xx:', upstream.status, errorText);
       return Response.json(
-        {
-          proxy: 'error',
-          latencyMs: Date.now() - startedAt,
-          upstreamStatus: upstream.status,
-          error: 'Upstream returned an error',
-        },
+        { error: 'Upstream returned an error' },
         { status: 502, headers: corsHeaders() },
       );
     }
@@ -77,11 +68,7 @@ export async function GET() {
   } catch (error) {
     console.error('Health proxy error:', error);
     return Response.json(
-      {
-        proxy: 'error',
-        latencyMs: Date.now() - startedAt,
-        error: 'Internal proxy error',
-      },
+      { error: 'Internal proxy error' },
       { status: 502, headers: corsHeaders() },
     );
   }

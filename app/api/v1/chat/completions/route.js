@@ -39,14 +39,7 @@ export async function POST(request) {
     const messagesError = validateCompletionMessages(body.messages);
     if (messagesError) {
       return Response.json(
-        {
-          error: {
-            message: messagesError,
-            type: 'invalid_request_error',
-            param: 'messages',
-            code: null,
-          },
-        },
+        { error: messagesError },
         { status: 400, headers: completionsCors() },
       );
     }
@@ -54,14 +47,7 @@ export async function POST(request) {
     const contentLengthError = validateCompletionContentLength(body.messages);
     if (contentLengthError) {
       return Response.json(
-        {
-          error: {
-            message: contentLengthError,
-            type: 'invalid_request_error',
-            param: 'messages',
-            code: null,
-          },
-        },
+        { error: contentLengthError },
         { status: 400, headers: completionsCors() },
       );
     }
@@ -108,19 +94,12 @@ export async function POST(request) {
       clearTimeout(timeout);
       if (err.name === 'AbortError') {
         return Response.json(
-          { error: { message: 'Upstream timeout', type: 'server_error', param: null, code: null } },
+          { error: 'Upstream timeout' },
           { status: 504, headers: completionsCors() },
         );
       }
       return Response.json(
-        {
-          error: {
-            message: 'Upstream connection failed',
-            type: 'server_error',
-            param: null,
-            code: null,
-          },
-        },
+        { error: 'Upstream connection failed' },
         { status: 502, headers: completionsCors() },
       );
     }
@@ -128,14 +107,7 @@ export async function POST(request) {
 
     if (!upstream.ok) {
       return Response.json(
-        {
-          error: {
-            message: 'Upstream request failed',
-            type: 'server_error',
-            param: null,
-            code: null,
-          },
-        },
+        { error: 'Upstream request failed' },
         { status: 502, headers: completionsCors() },
       );
     }
@@ -225,7 +197,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('OpenAI completions proxy error:', error);
     return Response.json(
-      { error: { message: 'Internal proxy error', type: 'server_error', param: null, code: null } },
+      { error: 'Internal proxy error' },
       { status: 500, headers: completionsCors() },
     );
   }
