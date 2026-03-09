@@ -10,24 +10,13 @@
 
 ## Milestone 1: Code Correctness Fixes
 
-- [ ] Fix User-Agent version string
-      Find every instance of the hardcoded string "chatjimmy-proxy/0.1.0" in User-Agent headers.
-      Replace with a reference to the existing PROXY_VERSION constant.
-      It should never be hardcoded again after this.
+- [x] Fix User-Agent version string — updated README docs to reference PROXY_VERSION; code already used PROXY_USER_AGENT from format.js (2026-03-08)
 
-- [ ] Fix token counting sentinel value
-      Find every place token counts return -1 on parse failure.
-      Return null instead.
-      Update the README example response under /v1/chat/completions to show null instead of -1.
+- [x] Fix token counting sentinel value — code already returns null via pickNumber; README already showed null (2026-03-08)
 
-- [ ] Unify error response format
-      Audit all route handlers for error response shape.
-      Standardize everything to { error: string }.
-      HTTP status code carries the numeric signal — remove any status field from error bodies.
+- [x] Unify error response format — standardized health/route.js and v1/chat/completions/route.js to { error: string }; removed extra fields (proxy, latencyMs, upstreamStatus) from error bodies and flattened OpenAI-style error objects (2026-03-08)
 
-- [ ] Fix shell script macOS date compatibility
-      In test-endpoints.sh, find date +%s%N (GNU-only, breaks on macOS BSD date).
-      Replace with date +%s (seconds precision, works everywhere without dependencies).
+- [x] Fix shell script macOS date compatibility — test-endpoints.sh already uses date +%s (no %N), no changes needed (2026-03-08)
 
 ---
 

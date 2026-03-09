@@ -51,7 +51,7 @@ Proxy chat endpoint used by the UI.
   - `chatOptions.systemPrompt = ""`
   - `chatOptions.topK = 8`
   - `attachment = null`
-- Sends request with `User-Agent: chatjimmy-proxy/0.1.0 (educational project)`
+- Sends request with `User-Agent: chatjimmy-proxy/${PROXY_VERSION} (educational project)` (version comes from `app/lib/format.js`)
 - Supports two output modes:
   - **Default streaming mode** (`POST /api/chat`): streams raw upstream data back unchanged (`0:` token lines + metadata)
   - **Normalized JSON mode** (`POST /api/chat?format=json`): buffers the full upstream response, removes `<|stats|>...<|/stats|>` metadata blocks, parses stats, and returns an OpenAI-compatible `chat.completion` JSON payload

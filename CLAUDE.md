@@ -31,6 +31,7 @@ Add a session summary block at the bottom of this file.
 - null for missing/invalid values, never -1 or magic numbers as error sentinels
 - All env var reads go through app/lib/config.js — no process.env scattered in route handlers
 - Version string comes from the PROXY_VERSION constant — never hardcoded
+- Always run `npx prettier --write .` before committing — CI enforces `prettier --check` and will fail if skipped
 
 ## What We Don't Care About (Intentionally Skipped)
 
