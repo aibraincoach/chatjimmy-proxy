@@ -50,3 +50,9 @@ Add a session summary block at the bottom of this file.
 - Identified 4 priority fixes: User-Agent version, token null, error format consistency, shell script macOS compat
 - Confirmed burst-mode streaming is intentional and correct for HC1 throughput
 - No code changes this session
+
+### Session: 2026-03-20 — Assistant message copy button
+
+- Added `getAssistantCopyText`, `isAssistantMessageComplete`, and a muted-theme Copy control under each finished assistant bubble in `app/page.jsx`
+- Copy uses `navigator.clipboard.writeText` with silent no-op on missing API or failure; success shows “✓ Copied” for 2s
+- Ran `npx prettier --write .` before commit

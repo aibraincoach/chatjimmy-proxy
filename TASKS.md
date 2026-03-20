@@ -38,6 +38,7 @@
 
 ## Completed
 
+- [x] Add copy button on completed assistant messages in chat UI (app/page.jsx) — after stream ends, clipboard + 2s “✓ Copied” feedback, silent clipboard fail (2026-03-20)
 - [x] Confirm burst-mode streaming is intentional — benchmarked 24k byte reversal at 871ms, HC1 throughput makes buffer-and-burst correct default (2025-03)
 - [x] Add CLAUDE.md, PLANNING.md, TASKS.md framework to repo (2025-03)
 - [x] Skip SSL verification for upstream (chatjimmy.ai cert invalid) — undici Agent with rejectUnauthorized: false, centralized in app/lib/config.js (2026-03)
