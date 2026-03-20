@@ -254,15 +254,73 @@ function getVersionPayload() {
   };
 }
 
+function getAssistantCopyText(msg) {
+  if (!msg || msg.role !== 'assistant') return '';
+  if (msg.type === 'help' && msg.helpPayload) {
+    const { title, intro, sections } = msg.helpPayload;
+    const parts = [title];
+    if (intro?.length) {
+      parts.push('', ...intro);
+    }
+    for (const section of sections || []) {
+      parts.push('', section.title);
+      if (section.description) parts.push(section.description);
+      if (section.code) parts.push(section.code);
+    }
+    return parts.join('\n');
+  }
+  if (msg.type === 'version' && msg.versionPayload) {
+    return [msg.versionPayload.title, '', ...msg.versionPayload.lines].join('\n');
+  }
+  return msg.content || '';
+}
+
+function isAssistantMessageComplete(messages, index, isSending) {
+  const msg = messages[index];
+  if (!msg || msg.role !== 'assistant') return false;
+  const isLast = index === messages.length - 1;
+  if (isLast && isSending) return false;
+  return true;
+}
+
 export default function HomePage() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [connection, setConnection] = useState({ status: 'checking', latencyMs: null });
   const [logs, setLogs] = useState([]);
+  const [copyFeedbackIdx, setCopyFeedbackIdx] = useState(null);
   const abortRef = useRef(null);
+  const copyFeedbackTimerRef = useRef(null);
 
   const canSend = useMemo(() => input.trim().length > 0 && !isSending, [input, isSending]);
+
+  useEffect(() => {
+    return () => {
+      if (copyFeedbackTimerRef.current) {
+        clearTimeout(copyFeedbackTimerRef.current);
+      }
+    };
+  }, []);
+
+  async function handleCopyAssistant(index, text) {
+    try {
+      if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      setCopyFeedbackIdx(index);
+      if (copyFeedbackTimerRef.current) {
+        clearTimeout(copyFeedbackTimerRef.current);
+      }
+      copyFeedbackTimerRef.current = setTimeout(() => {
+        setCopyFeedbackIdx(null);
+        copyFeedbackTimerRef.current = null;
+      }, 2000);
+    } catch {
+      // Clipboard unavailable or denied — silent per product requirement
+    }
+  }
 
   function handleCancel() {
     if (abortRef.current) {
@@ -530,6 +588,18 @@ export default function HomePage() {
               ) : (
                 <div>{msg.content || (msg.role === 'assistant' && isSending ? '…' : '')}</div>
               )}
+              {isAssistantMessageComplete(messages, idx, isSending) && getAssistantCopyText(msg) ? (
+                <button
+                  type="button"
+                  style={{
+                    ...styles.copyButton,
+                    ...(copyFeedbackIdx === idx ? styles.copyButtonCopied : null),
+                  }}
+                  onClick={() => handleCopyAssistant(idx, getAssistantCopyText(msg))}
+                >
+                  {copyFeedbackIdx === idx ? '✓ Copied' : 'Copy'}
+                </button>
+              ) : null}
             </div>
           ))}
         </div>
@@ -705,5 +775,21 @@ const styles = {
     overflowX: 'auto',
     fontFamily:
       'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+  },
+  copyButton: {
+    marginTop: '8px',
+    display: 'block',
+    background: 'transparent',
+    color: '#8f9bb3',
+    border: '1px solid #3a4a68',
+    borderRadius: '6px',
+    padding: '4px 10px',
+    fontSize: '11px',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+  },
+  copyButtonCopied: {
+    color: '#7eb89a',
+    borderColor: '#3d5c4f',
   },
 };
