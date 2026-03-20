@@ -20,8 +20,9 @@
 
 ---
 
-## Milestone 2: Hardening (Do When Needed)
+## Milestone 2: Hardening & Documentation (Do When Needed)
 
+- [ ] Document OpenAI API compliance gaps — usage fields return null, temperature/top_p/max_tokens accepted but ignored, stats block format undocumented and fragile, model name hardcoded. Goal: one clear section in README so integrators know what they're getting.
 - [ ] Extract model name "llama3.1-8B" to a single config constant — currently in multiple files
 - [ ] Validate message content structure in validateChatHistory — currently only checks array length
 - [ ] Add maximum response size guard in JSON buffering mode — upstream.text() is unbounded

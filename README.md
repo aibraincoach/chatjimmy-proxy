@@ -235,6 +235,30 @@ print(response.choices[0].message.content)
 
 Returns the upstream models payload (OpenAI-compatible list format).
 
+## API Compliance & Limitations
+
+This proxy implements the OpenAI chat completions interface but has known compliance gaps due to upstream ChatJimmy API constraints:
+
+**Usage Fields**
+- `usage` in `/v1/chat/completions` responses returns all token counts as `null` because ChatJimmy's stats block format is undocumented and fragile
+- For `/api/chat?format=json`, `usage` extracts `prefill_tokens`, `decode_tokens`, `total_tokens`, and `total_duration` from the upstream stats block when available; missing stats block returns `null`
+
+**Request Parameters Accepted But Ignored**
+- `temperature` — ChatJimmy does not expose temperature control
+- `top_p` — ChatJimmy does not expose top-p control
+- `max_tokens` — ChatJimmy does not expose output length limits
+- These parameters are accepted in requests for compatibility but have no effect; the proxy silently ignores them
+
+**Model Name**
+- `model` parameter is accepted but hardcoded to `"llama3.1-8B"` — the only upstream model available
+- Custom model names in requests are ignored; responses always return `"model": "llama3.1-8B"`
+
+**Stats Block Format**
+- The upstream `<|stats|>...<|/stats|>` block format is not officially documented
+- If the format changes, token counting will break silently and return `null`
+
+If your integration requires any of these features, this proxy is not suitable for that use case.
+
 ## UI
 
 The home page (`app/page.jsx`) is a split-screen interface:
